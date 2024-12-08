@@ -61,16 +61,52 @@ namespace SistControleEstoque.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,ProdutoId,FuncionarioId,Quantidade,Tipo,Data")] Movimentacao movimentacao)
         {
-            //if (ModelState.IsValid)
-            //{
+            var produto = await _context.Produto.FindAsync(movimentacao.ProdutoId);
+            if (produto == null)
+            {
+                ModelState.AddModelError("", "Produto não encontrado.");
+                ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
+                ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
+                return View(movimentacao);
+            }
+
+            // Ajusta a quantidade do produto de acordo com o tipo de movimentação
+            if (movimentacao.Tipo == Movimentacao.TipoMovimentacao.Entrada)
+            {
+                produto.Quantidade += movimentacao.Quantidade;
+            }
+            else if (movimentacao.Tipo == Movimentacao.TipoMovimentacao.Saida)
+            {
+                if (produto.Quantidade < movimentacao.Quantidade)
+                {
+                    ModelState.AddModelError("", "Quantidade insuficiente em estoque.");
+                    ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
+                    ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
+                    return View(movimentacao);
+                }
+                produto.Quantidade -= movimentacao.Quantidade;
+            }
+
+            try
+            {
+                // Atualiza o produto no banco de dados
+                _context.Update(produto);
+
+                // Adiciona a movimentação ao banco de dados
                 _context.Add(movimentacao);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
-            //}
-            
-            //ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
-            //ViewData["ProdutoId"] = new SelectList(_context.Set<Produto>(), "Id", "Id", movimentacao.ProdutoId);
-            //return View(movimentacao);
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"Erro ao salvar os dados: {ex.Message}");
+            }
+
+            // Recarrega as listas para a view em caso de erro
+            ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
+            ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
+            return View(movimentacao);
         }
 
         // GET: Movimentacoes/Edit/5
