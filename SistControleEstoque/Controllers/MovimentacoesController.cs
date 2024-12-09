@@ -49,8 +49,8 @@ namespace SistControleEstoque.Controllers
         // GET: Movimentacoes/Create
         public IActionResult Create()
         {
-            ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id");
-            ViewData["ProdutoId"] = new SelectList(_context.Set<Produto>(), "Id", "Id");
+            ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Nome");
+            ViewData["ProdutoId"] = new SelectList(_context.Set<Produto>(), "Id", "Nome");
             return View();
         }
 
@@ -104,7 +104,7 @@ namespace SistControleEstoque.Controllers
             }
 
             // Recarrega as listas para a view em caso de erro
-            ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
+            ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Nome", movimentacao.FuncionarioId);
             ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
             return View(movimentacao);
         }
@@ -131,9 +131,10 @@ namespace SistControleEstoque.Controllers
             var produto = await _context.Produto.FindAsync(movimentacao.ProdutoId);
             if (produto == null)
             {
-                ModelState.AddModelError("", "Produto não encontrado.");
-                ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
-                ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
+                
+                /*ModelState.AddModelError("", "Produto não encontrado.")*/;
+                ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Nome", movimentacao.FuncionarioId);
+                ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Nome", movimentacao.ProdutoId);
                 return View(movimentacao);
             }
 
@@ -159,8 +160,8 @@ namespace SistControleEstoque.Controllers
                     if (produto.Quantidade < movimentacao.Quantidade)
                     {
                         ModelState.AddModelError("", "Quantidade insuficiente em estoque.");
-                        ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
-                        ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
+                        ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Nome", movimentacao.FuncionarioId);
+                        ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Nome", movimentacao.ProdutoId);
                         return View(movimentacao);
                     }
                     produto.Quantidade -= movimentacao.Quantidade;

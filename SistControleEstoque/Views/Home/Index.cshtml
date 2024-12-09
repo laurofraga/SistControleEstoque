@@ -1,8 +1,95 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
+@model SistControleEstoque.ViewModels.HomeViewModel
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+<div class="container">
+    <h1>Relatórios</h1>
+
+    <div class="row">
+        <!-- Produtos com Estoque Baixo -->
+        <div class="col-md-6">
+            <h2>Produtos com Estoque Baixo</h2>
+            @if (Model.ProdutosComEstoqueBaixo.Any())
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Quantidade</th>
+                            <th>Estoque Mínimo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var produto in Model.ProdutosComEstoqueBaixo)
+                        {
+                            <tr>
+                                <td>@produto.Nome</td>
+                                <td>@produto.Quantidade</td>
+                                <td>@produto.EstoqueMinimo</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>Nenhum produto com estoque baixo no momento.</p>
+            }
+        </div>
+
+        <!-- Movimentações Recentes -->
+        <div class="col-md-6">
+            <h2>Movimentações Recentes</h2>
+            @if (Model.MovimentacoesRecentes.Any())
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Tipo</th>
+                            <th>Quantidade</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var movimentacao in Model.MovimentacoesRecentes)
+                        {
+                            <tr>
+                                <td>@movimentacao.Produto.Nome</td>
+                                <td>@movimentacao.Tipo</td>
+                                <td>@movimentacao.Quantidade</td>
+                                <td>@movimentacao.Data.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>Nenhuma movimentação recente.</p>
+            }
+        </div>
+        <div class="col-md-4">
+            <h2>Produtos por Categoria</h2>
+            @if (Model.ProdutosPorCategoria.Any())
+            {
+                @foreach (var categoria in Model.ProdutosPorCategoria)
+                {
+                    <h3>@categoria.Key</h3>
+                    <ul>
+                        @foreach (var produto in categoria.Value)
+                        {
+                            <li>@produto.Nome (Quantidade: @produto.Quantidade)</li>
+                        }
+                    </ul>
+                }
+            }
+            else
+            {
+                <p>Nenhuma categoria encontrada.</p>
+            }
+        </div>
+    </div>
 </div>

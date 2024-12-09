@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SistControleEstoque.Data;
 using SistControleEstoque.Models;
 using System.Diagnostics;
 
@@ -6,16 +8,41 @@ namespace SistControleEstoque.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly SistControleEstoqueContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(SistControleEstoqueContext context)
         {
-            _logger = logger;
+            _context = context;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var produtosComEstoqueBaixo = await _context.Produto
+                .Where(p => p.Quantidade <=p.EstoqueMinimo).ToListAsync();
+            
+            var MovimentacoesRecentes = await _context.Movimentacao
+                .Include(m => m.Produto)
+                .Include(m => m.Funcionario)
+                .OrderByDescending(m => m.Data).Take(5).ToListAsync();
+
+            var produtos = await _context.Produto
+               .Include(p => p.Categoria) 
+               .ToListAsync();
+
+            var ProdutosPorCategoria = produtos
+               .GroupBy(p => p.Categoria?.Nome ?? "Sem Categoria")
+               .ToDictionary(g => g.Key, g => g.ToList());
+
+            var viewModel = new ViewModels.HomeViewModel
+            {
+                ProdutosComEstoqueBaixo = produtosComEstoqueBaixo,
+                MovimentacoesRecentes = MovimentacoesRecentes,
+                ProdutosPorCategoria = ProdutosPorCategoria
+            };
+
+
+            return View(viewModel);
+
         }
 
         public IActionResult Privacy()

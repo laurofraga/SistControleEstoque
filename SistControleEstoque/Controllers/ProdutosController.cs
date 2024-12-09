@@ -49,8 +49,8 @@ namespace SistControleEstoque.Controllers
         // GET: Produtos/Create
         public IActionResult Create()
         {
-            ViewData["CategoriaId"] = new SelectList(_context.Categoria, "Id", "Id");
-            ViewData["FornecedorId"] = new SelectList(_context.Fornecedor, "Id", "Id");
+            ViewData["CategoriaId"] = new SelectList(_context.Categoria, "Id", "Nome");
+            ViewData["FornecedorId"] = new SelectList(_context.Fornecedor, "Id", "Nome");
             return View();
         }
 
@@ -85,8 +85,8 @@ namespace SistControleEstoque.Controllers
             {
                 return NotFound();
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categoria, "Id", "Id", produto.CategoriaId);
-            ViewData["FornecedorId"] = new SelectList(_context.Fornecedor, "Id", "Id", produto.FornecedorId);
+            ViewData["CategoriaId"] = new SelectList(_context.Categoria, "Id", "Nome", produto.CategoriaId);
+            ViewData["FornecedorId"] = new SelectList(_context.Fornecedor, "Id", "Nome", produto.FornecedorId);
             return View(produto);
         }
 
