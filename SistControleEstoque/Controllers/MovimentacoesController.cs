@@ -110,29 +110,6 @@ namespace SistControleEstoque.Controllers
         }
 
         // GET: Movimentacoes/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null || _context.Movimentacao == null)
-            {
-                return NotFound();
-            }
-
-            var movimentacao = await _context.Movimentacao.FindAsync(id);
-            if (movimentacao == null)
-            {
-                return NotFound();
-            }
-           
-            ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
-            ViewData["ProdutoId"] = new SelectList(_context.Set<Produto>(), "Id", "Id", movimentacao.ProdutoId);
-            return View(movimentacao);
-        }
-
-        // POST: Movimentacoes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,ProdutoId,FuncionarioId,Quantidade,Tipo,Data")] Movimentacao movimentacao)
         {
             if (id != movimentacao.Id)
@@ -140,29 +117,78 @@ namespace SistControleEstoque.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            // Busca a movimentação original do banco de dados
+            var movimentacaoOriginal = await _context.Movimentacao
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (movimentacaoOriginal == null)
             {
-                try
+                return NotFound();
+            }
+
+            // Busca o produto associado à movimentação
+            var produto = await _context.Produto.FindAsync(movimentacao.ProdutoId);
+            if (produto == null)
+            {
+                ModelState.AddModelError("", "Produto não encontrado.");
+                ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
+                ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
+                return View(movimentacao);
+            }
+
+            try
+            {
+                // Revertendo o impacto da movimentação original no estoque
+                if (movimentacaoOriginal.Tipo == Movimentacao.TipoMovimentacao.Entrada)
                 {
-                    _context.Update(movimentacao);
-                    await _context.SaveChangesAsync();
+                    produto.Quantidade -= movimentacaoOriginal.Quantidade;
                 }
-                catch (DbUpdateConcurrencyException)
+                else if (movimentacaoOriginal.Tipo == Movimentacao.TipoMovimentacao.Saida)
                 {
-                    if (!MovimentacaoExists(movimentacao.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    produto.Quantidade += movimentacaoOriginal.Quantidade;
                 }
+
+                // Aplicando o impacto da nova movimentação no estoque
+                if (movimentacao.Tipo == Movimentacao.TipoMovimentacao.Entrada)
+                {
+                    produto.Quantidade += movimentacao.Quantidade;
+                }
+                else if (movimentacao.Tipo == Movimentacao.TipoMovimentacao.Saida)
+                {
+                    if (produto.Quantidade < movimentacao.Quantidade)
+                    {
+                        ModelState.AddModelError("", "Quantidade insuficiente em estoque.");
+                        ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
+                        ViewData["ProdutoId"] = new SelectList(_context.Produto, "Id", "Id", movimentacao.ProdutoId);
+                        return View(movimentacao);
+                    }
+                    produto.Quantidade -= movimentacao.Quantidade;
+                }
+
+                // Atualizando os dados no banco
+                _context.Update(produto);
+                _context.Update(movimentacao);
+                await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["FuncionarioId"] = new SelectList(_context.Funcionario, "Id", "Id", movimentacao.FuncionarioId);
-            ViewData["ProdutoId"] = new SelectList(_context.Set<Produto>(), "Id", "Id", movimentacao.ProdutoId);
-            return View(movimentacao);
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!MovimentacaoExists(movimentacao.Id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        private bool MovimentacaoExists(int id)
+        {
+            throw new NotImplementedException();
         }
 
         // GET: Movimentacoes/Delete/5
@@ -192,21 +218,43 @@ namespace SistControleEstoque.Controllers
         {
             if (_context.Movimentacao == null)
             {
-                return Problem("Entity set 'SistControleEstoqueContext.Movimentacao'  is null.");
+                return Problem("Entity set 'SistControleEstoqueContext.Movimentacao' is null.");
             }
+
+            // Busca a movimentação a ser excluída
             var movimentacao = await _context.Movimentacao.FindAsync(id);
+
             if (movimentacao != null)
             {
-                _context.Movimentacao.Remove(movimentacao);
-            }
-            
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
+                // Busca o produto associado à movimentação
+                var produto = await _context.Produto.FindAsync(movimentacao.ProdutoId);
+                if (produto != null)
+                {
+                    // Reverte o impacto da movimentação no estoque
+                    if (movimentacao.Tipo == Movimentacao.TipoMovimentacao.Entrada)
+                    {
+                        produto.Quantidade -= movimentacao.Quantidade;
+                    }
+                    else if (movimentacao.Tipo == Movimentacao.TipoMovimentacao.Saida)
+                    {
+                        produto.Quantidade += movimentacao.Quantidade;
+                    }
 
-        private bool MovimentacaoExists(int id)
-        {
-          return (_context.Movimentacao?.Any(e => e.Id == id)).GetValueOrDefault();
+                    // Atualiza o produto no banco
+                    _context.Produto.Update(produto);
+                }
+
+                // Remove a movimentação
+                _context.Movimentacao.Remove(movimentacao);
+
+                // Salva as alterações no banco
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
         }
     }
 }
+
+
+
