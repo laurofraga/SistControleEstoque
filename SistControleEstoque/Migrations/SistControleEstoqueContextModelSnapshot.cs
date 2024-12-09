@@ -153,6 +153,9 @@ namespace SistControleEstoque.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("EstoqueMinimo")
+                        .HasColumnType("int");
+
                     b.Property<int>("FornecedorId")
                         .HasColumnType("int");
 

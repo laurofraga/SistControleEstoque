@@ -59,7 +59,7 @@ namespace SistControleEstoque.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nome,Descricao,Quantidade,Preco,CategoriaId,FornecedorId")] Produto produto)
+        public async Task<IActionResult> Create([Bind("Id,Nome,Descricao,Quantidade,Preco,CategoriaId,FornecedorId,EstoqueMinimo ")] Produto produto)
         {
             //if (ModelState.IsValid)
             //{
@@ -95,15 +95,15 @@ namespace SistControleEstoque.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nome,Descricao,Quantidade,Preco,CategoriaId,FornecedorId")] Produto produto)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Nome,Descricao,Quantidade,Preco,CategoriaId,FornecedorId,EstoqueMinimo")] Produto produto)
         {
             if (id != produto.Id)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 try
                 {
                     _context.Update(produto);
@@ -122,10 +122,10 @@ namespace SistControleEstoque.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categoria, "Id", "Id", produto.CategoriaId);
-            ViewData["FornecedorId"] = new SelectList(_context.Fornecedor, "Id", "Id", produto.FornecedorId);
-            return View(produto);
-        }
+            //ViewData["CategoriaId"] = new SelectList(_context.Categoria, "Id", "Id", produto.CategoriaId);
+            //ViewData["FornecedorId"] = new SelectList(_context.Fornecedor, "Id", "Id", produto.FornecedorId);
+            //return View(produto);
+        
 
         // GET: Produtos/Delete/5
         public async Task<IActionResult> Delete(int? id)
@@ -154,18 +154,27 @@ namespace SistControleEstoque.Controllers
         {
             if (_context.Produto == null)
             {
-                return Problem("Entity set 'SistControleEstoqueContext.Produto'  is null.");
+                return Problem("O conjunto de entidades 'SistControleEstoqueContext.Produtos' está nulo.");
             }
+
+            // Verificar se o produto está vinculado a alguma movimentação
+            var movimentacoesVinculadas = await _context.Movimentacao.AnyAsync(m => m.ProdutoId == id);
+            if (movimentacoesVinculadas)
+            {
+                // Exibir mensagem de erro ou redirecionar para uma página informando a impossibilidade de exclusão
+                TempData["Erro"] = "Este produto não pode ser excluído porque está vinculado a uma ou mais movimentações.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var produto = await _context.Produto.FindAsync(id);
             if (produto != null)
             {
                 _context.Produto.Remove(produto);
+                await _context.SaveChangesAsync();
             }
-            
-            await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
-
         private bool ProdutoExists(int id)
         {
           return (_context.Produto?.Any(e => e.Id == id)).GetValueOrDefault();

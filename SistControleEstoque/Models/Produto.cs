@@ -9,6 +9,7 @@
         public decimal Preco { get; set; }
         public int CategoriaId { get; set; }
         public int FornecedorId { get; set; }
+        public int EstoqueMinimo { get; set; }
 
         public Categoria Categoria { get; set; }
         public Fornecedor Fornecedor { get; set; }

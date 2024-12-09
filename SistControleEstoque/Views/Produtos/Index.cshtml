@@ -30,6 +30,10 @@
             <th>
                 @Html.DisplayNameFor(model => model.Fornecedor)
             </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EstoqueMinimo)
+            </th>
+
             <th></th>
         </tr>
     </thead>
@@ -55,11 +59,21 @@
                 @Html.DisplayFor(modelItem => item.Fornecedor.Id)
             </td>
             <td>
+                @Html.DisplayFor(modelItem => item.EstoqueMinimo)
+            </td>
+            <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
                 <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
             </td>
         </tr>
 }
+        @if (TempData["Erro"] != null)
+        {
+            <div class="alert alert-danger">
+                @TempData["Erro"]
+            </div>
+        }
+
     </tbody>
 </table>
